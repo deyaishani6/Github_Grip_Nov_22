@@ -1,0 +1,113 @@
+---
+title: "#Task1(GRIP NOv'22)"
+author: "Aishani Dey"
+date: "2022-11-20"
+output:
+  html_document: default
+  word_document: default
+---
+## Data Science & Business Analytics:
+# #Task-1:
+## -------------------------------------
+## We have to fit a linear regression model to predict the percentage of a student based on the number of study hours. (Supervised ML)
+## ---------------------------------------
+## We have to first attach the dataset consisting of the student scores and study hours.Here, Scores which is the percentage of  marks a student can get is our study variable/dependent variable and study hours is our independent/predictor variable.
+```{r}
+rm(list=ls())
+setwd("D:/")
+d=read.csv("student_scores.csv");d
+attach(d)
+```
+
+## Now,to better understand the nature of the variables under study we have drawn the individual boxplots: 
+## Graphical view
+
+```{r}
+library(ggplot2)
+g1=qplot(Hours,data=d,geom="boxplot",fill=I("red"),xlab="Hours of Study",main="Boxplot on hours of Study",alpha=I(0.4));g1
+```
+
+## From the Boxplot of Hours of Study, we can observe few things:
+### a)On an average, a student will study about 5 hours in a particular day.
+### b) Also, we have also observed that the distribution of hours of study is slightly positively skewed which means that comparatively more number of students used to study less than 5 hours.
+
+```{r}
+ g2= qplot(Scores,data=d,geom="boxplot",fill=I("yellow"),alpha=I(0.7),main="Boxplot of Percentage of marks obtained");g2
+```
+
+## From the boxplot of Scores,we can observe:
+### a)On an avarage,The percentage of marks a student can get is about 50%.
+### b) It is also positively skewed,majority of the students get a percentage of less than 50%.
+## ---------------------------------------------
+### Now we are interested to look into the association between the two variables.
+## we obtain scatterplot of scores and hours.
+
+```{r}
+ ggplot(d,aes(Hours,Scores))+geom_point(col=2,lwd=1)+labs(title=" Scatterplot of Scores vs Hours") 
+```
+
+* ### Comment:We have seen that Scores and hours are highly positively correlated i.e i other words we can that,as study hours increases the percentage of marks obtained also increases.
+
+
+## *[Making *Train* and *Test* data:]{.underline}*We will fit the regression model on Train data and check whether the fit is well or not based on the test data.
+```{r}
+n=nrow(d)
+set.seed(12345)
+sam=sample(c(1,0),n,replace=T,prob=c(0.8,0.2))
+d1=cbind(d,sam)
+##extracting the train data
+attach(d1)
+train_d=d1[sam==1,]
+test_d=d1[sam==0,]
+```
+
+### We have chosen 80% to be train and remaining 20% of the data to be test data.
+## --------------------------------------------
+## **[Regression Model:]{.underline}**
+### We will fit linear regression model on the train data.
+
+```{r}
+reg=lm(Scores~Hours,train_d)
+summary(reg)
+```
+
+## **[Our regression model comes out as:]{.underline}**
+```{r}
+paste("Scores=",round(reg$coefficients[[1]],2),"+",round(reg$coefficient[[2]],2),"*(Hours)")
+```
+
+## Looking into the summary of the model, we can see that R^2 is 96.64% which  again means that the fit is well. 
+
+### we can also verify our goodness of fit through visualisation.We can have residual plot and plot of predicted and actual values of scores.
+
+```{r}
+predicted_val=as.numeric(predict(reg))
+resi_error=as.numeric(resid(reg))
+ggplot(NULL,aes(train_d$Hours,resi_error))+geom_point(col=3,lwd=1)+labs(title="Residual plot",x="Hours of Study",y="residuals")
+```
+
+
+```{r}
+g=ggplot(NULL,aes(train_d$Hours))+
+  geom_point(aes(y=train_d$Scores,col="actual"))+geom_line(aes(y=predicted_val,col="predicted"))
+g+scale_color_manual(name="Scores",             breaks=c("actual","predicted"),           values=c("actual"="blue","predicted"="red"))+labs(title="Hours vs Scores",x="Hours",y="Scores")
+```
+### From the plot of hours vs Scores(Actual and fitted values),we also see that actual value points are more or less clustered around  the line of predicted values.
+
+## To check the accuracy,we now fit the same model on the test data and check the coefficient of determination in this case:
+```{r}
+prediction=as.numeric(predict(reg,data.frame(Hours=test_d$Hours)))
+attach(test_d)
+coefficient_determination=1-(sum((Scores-prediction)^2)/sum((Scores-mean(Scores))^2))
+```
+
+### Here also the value of R^2 is around 81% which is also high.So we can now claim that the model is accurate for our data.
+
+## Now we have to find the predicted score if the hours of study is 9.25.
+```{r}
+intercept=reg$coefficients[[1]]
+estimate=reg$coefficients[[2]]
+predicted_score=intercept+(estimate*(9.25));predicted_score
+```
+
+### If a student studies for an average of 9.25 hours,then the predicted percentage of marks will be about 95.79%.  
